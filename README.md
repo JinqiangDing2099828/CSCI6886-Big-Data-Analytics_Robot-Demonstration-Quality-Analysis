@@ -1,3 +1,12 @@
+# Teamwork: 
+## Team leader: Dazhi Yang 
+## Team member: Jinqiang Ding 
+## Team member: Xiao Wang
+
+
+
+
+
 # 大数据课程项目说明
 
 > 给组员看的版本：不需要任何基础，从头读懂项目要做什么
