@@ -1,0 +1,10 @@
+pyspark>=3.4.0
+pandas
+numpy
+matplotlib
+seaborn
+datasets
+pyarrow
+jupyter
+xgboost
+scikit-learn

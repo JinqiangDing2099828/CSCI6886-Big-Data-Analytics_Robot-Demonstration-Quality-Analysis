@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Final Report - Robot Demonstration Quality Analysis</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 0.55in;
+    }
+
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: #1f2937;
+      line-height: 1.38;
+      font-size: 11.2pt;
+      margin: 0;
+      background: #ffffff;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 8px 0;
+      color: #0f172a;
+    }
+
+    h1 {
+      font-size: 22pt;
+      line-height: 1.15;
+    }
+
+    h2 {
+      font-size: 14pt;
+      border-bottom: 2px solid #dbe4f0;
+      padding-bottom: 4px;
+      margin-top: 16px;
+    }
+
+    h3 {
+      font-size: 11.5pt;
+      margin-top: 10px;
+    }
+
+    p {
+      margin: 6px 0;
+    }
+
+    ul {
+      margin: 6px 0 8px 18px;
+      padding: 0;
+    }
+
+    li {
+      margin: 3px 0;
+    }
+
+    .title-block {
+      margin-bottom: 10px;
+    }
+
+    .meta {
+      color: #475569;
+      font-size: 10.3pt;
+      margin-top: 6px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .card {
+      background: #f8fafc;
+      border: 1px solid #dbe4f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0 10px 0;
+      font-size: 10pt;
+    }
+
+    th, td {
+      border: 1px solid #d7dee8;
+      padding: 6px 7px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eaf1f8;
+      color: #0f172a;
+    }
+
+    .small {
+      font-size: 9.6pt;
+      color: #475569;
+    }
+
+    .figure {
+      margin: 10px 0 12px 0;
+      text-align: center;
+      page-break-inside: avoid;
+    }
+
+    .figure img {
+      max-width: 100%;
+      border: 1px solid #dbe4f0;
+      border-radius: 8px;
+    }
+
+    .caption {
+      font-size: 9.4pt;
+      color: #475569;
+      margin-top: 4px;
+    }
+
+    .highlight {
+      font-weight: 600;
+      color: #0b3b66;
+    }
+
+    .avoid-break {
+      page-break-inside: avoid;
+    }
+  </style>
+</head>
+<body>
+  <div class="title-block">
+    <h1>Robot Demonstration Quality Analysis</h1>
+    <div class="meta">
+      Final Report for Big Data Analytics Course<br>
+      Team Members: Dazhi Yang, JinQiang Ding, Xiao Wang<br>
+      Date: April 2, 2026
+    </div>
+  </div>
+
+  <h2>1. Problem Definition &amp; Application</h2>
+  <p>
+    This project studies whether <span class="highlight">interpretable trajectory statistics</span> can identify
+    high-quality robot demonstrations at scale. The task is framed as a binary classification problem at the
+    <span class="highlight">episode level</span>: given one full robot trajectory, predict whether that demonstration
+    should be considered high quality or low quality.
+  </p>
+  <p>
+    The real-world importance is practical. Large robot imitation-learning datasets often contain demonstrations with
+    inconsistent smoothness, unnecessary corrections, long detours, or inefficient execution. If we can detect
+    high-quality demonstrations using simple kinematic features, then data filtering becomes cheaper, more interpretable,
+    and easier to scale than relying only on manual inspection or expensive policy training loops.
+  </p>
+  <p>
+    This is useful for robot learning pipelines in manipulation, warehouse automation, and human-robot collaboration,
+    where better demonstrations can improve downstream policy performance while reducing annotation and compute cost.
+  </p>
+
+  <h2>2. Dataset &amp; Features</h2>
+  <div class="grid-2 avoid-break">
+    <div class="card">
+      <h3>Dataset Summary</h3>
+      <p>
+        We use <span class="highlight">8 LeRobot datasets</span> from HuggingFace: 5 simulation datasets and 3 real robot datasets.
+        The raw merged table contains <span class="highlight">251,802 frame rows</span> and <span class="highlight">7 original columns</span>.
+      </p>
+      <p>
+        After episode aggregation, the modeling table contains <span class="highlight">5,026 episodes</span> with
+        engineered trajectory-level features.
+      </p>
+      <table>
+        <tr><th>Environment</th><th>Datasets</th><th>Episodes</th></tr>
+        <tr><td>Simulation</td><td>PushT, xArm lift/push variants</td><td>3,406</td></tr>
+        <tr><td>Real Robot</td><td>Berkeley UR5, Columbia PushT, NYU Door</td><td>1,620</td></tr>
+        <tr><td><strong>Total</strong></td><td><strong>8 datasets</strong></td><td><strong>5,026</strong></td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Input Variables and Target</h3>
+      <p><strong>Raw frame-level variables:</strong> `source`, `episode_index`, `frame_index`, `observation_state`, `action`, `next_reward`, `next_done`.</p>
+      <p><strong>Engineered input features:</strong> 32 episode-level motion features derived from state/action sequences.</p>
+      <ul>
+        <li>Smoothness: jerk, action difference statistics</li>
+        <li>Efficiency: path efficiency, total path length, episode length</li>
+        <li>Consistency: action variance, correction count</li>
+        <li>Stability/diversity: final stability, state diversity, net change</li>
+      </ul>
+      <p><strong>Target variable:</strong> binary demonstration quality label.</p>
+      <ul>
+        <li>Simulation: high quality if episode max reward is above that dataset's median.</li>
+        <li>Real robot: high quality if episode length is below that dataset's median, because reward is saturated at 1.0.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="figure">
+    <img src="../data/fig01_dataset_overview.png" alt="Dataset overview">
+    <div class="caption">Figure 1. Overview of the LeRobot datasets used in the project.</div>
+  </div>
+
+  <h2>3. Methodology &amp; Analysis</h2>
+  <p>
+    The full workflow follows a big-data pipeline using PySpark DataFrames for scalable processing. The main steps are:
+  </p>
+  <table class="avoid-break">
+    <tr><th>Step</th><th>What We Did</th><th>Why It Matters</th></tr>
+    <tr>
+      <td>Data loading</td>
+      <td>Merged 8 LeRobot datasets into one frame-level parquet table.</td>
+      <td>Creates a unified analysis dataset across simulation and real environments.</td>
+    </tr>
+    <tr>
+      <td>Preprocessing</td>
+      <td>Checked missing values, standardized schema, and used relative paths/parquet storage.</td>
+      <td>Ensures reliable downstream feature computation.</td>
+    </tr>
+    <tr>
+      <td>L2 norm conversion</td>
+      <td>Converted variable-length state and action vectors into magnitude-based features.</td>
+      <td>Makes datasets with different state/action dimensions comparable.</td>
+    </tr>
+    <tr>
+      <td>Episode aggregation</td>
+      <td>Grouped frame rows into episode rows using PySpark.</td>
+      <td>The prediction target is trajectory quality, not frame quality.</td>
+    </tr>
+    <tr>
+      <td>Feature engineering</td>
+      <td>Computed 32 interpretable kinematic features such as smoothness, path efficiency, correction count, and final stability.</td>
+      <td>Encodes motion quality without needing deep sequence models.</td>
+    </tr>
+    <tr>
+      <td>Evaluation design</td>
+      <td>Compared models separately on simulation and real-robot subsets using cross-validation metrics.</td>
+      <td>Avoids mixing two environments with different label semantics.</td>
+    </tr>
+  </table>
+
+  <p>
+    A key methodological choice is interpretability. Instead of directly feeding raw trajectories into a large neural
+    model, we summarize each demonstration using motion statistics that can be explained to humans. This aligns with the
+    research question: not just whether quality can be predicted, but whether it can be predicted using features that are
+    understandable and actionable.
+  </p>
+
+  <h2>4. Models</h2>
+  <p>
+    We implemented multiple models and report at least two PySpark MLlib classifiers, satisfying the course requirement.
+    The primary models are <span class="highlight">Decision Tree</span>, <span class="highlight">Random Forest</span>,
+    and <span class="highlight">Gradient Boosted Trees (GBT)</span>. We also kept an MLP as an optional deep-learning baseline.
+  </p>
+  <table class="avoid-break">
+    <tr><th>Model</th><th>Framework</th><th>Why Selected</th></tr>
+    <tr>
+      <td>Decision Tree</td>
+      <td>PySpark MLlib</td>
+      <td>Highly interpretable baseline and easy to explain in terms of feature splits.</td>
+    </tr>
+    <tr>
+      <td>Random Forest</td>
+      <td>PySpark MLlib</td>
+      <td>Robust ensemble model that usually performs well on tabular features and reduces overfitting.</td>
+    </tr>
+    <tr>
+      <td>GBT</td>
+      <td>PySpark MLlib</td>
+      <td>Captures nonlinear relationships and often delivers stronger accuracy on structured tabular data.</td>
+    </tr>
+    <tr>
+      <td>MLP (optional baseline)</td>
+      <td>PyTorch</td>
+      <td>Included as a comparison to test whether a neural baseline can outperform tree-based methods.</td>
+    </tr>
+  </table>
+
+  <h2>5. Results &amp; Evaluation</h2>
+  <p>
+    Because this is a binary classification problem, we focus on <span class="highlight">AUC</span>,
+    <span class="highlight">Accuracy</span>, and <span class="highlight">F1</span>. AUC is especially important here
+    because it measures ranking quality even when decision thresholds vary.
+  </p>
+  <table class="avoid-break">
+    <tr><th>Experiment</th><th>Model</th><th>AUC</th><th>Accuracy</th><th>F1</th></tr>
+    <tr><td>Simulation</td><td>Decision Tree</td><td>0.6525</td><td>0.6072</td><td>0.6125</td></tr>
+    <tr><td>Simulation</td><td>Random Forest</td><td>0.7163</td><td>0.6433</td><td>0.6476</td></tr>
+    <tr><td>Simulation</td><td><strong>GBT</strong></td><td><strong>0.7172</strong></td><td><strong>0.6547</strong></td><td><strong>0.6585</strong></td></tr>
+    <tr><td>Real Robot</td><td>Decision Tree</td><td>0.9486</td><td>0.9105</td><td>0.9091</td></tr>
+    <tr><td>Real Robot</td><td>Random Forest</td><td>0.9893</td><td>0.9556</td><td>0.9546</td></tr>
+    <tr><td>Real Robot</td><td><strong>GBT</strong></td><td><strong>0.9935</strong></td><td><strong>0.9605</strong></td><td><strong>0.9595</strong></td></tr>
+  </table>
+
+  <div class="grid-2 avoid-break">
+    <div class="figure">
+      <img src="../data/fig_model_comparison_v2.png" alt="Model comparison">
+      <div class="caption">Figure 2. Model comparison across simulation and real-robot experiments.</div>
+    </div>
+    <div class="figure">
+      <img src="../data/fig_shap_comparison_v2.png" alt="SHAP comparison">
+      <div class="caption">Figure 3. Feature-importance comparison for the best-performing models.</div>
+    </div>
+  </div>
+
+  <p>
+    The model comparison shows a clear pattern. Tree-based models outperform the MLP baseline on simulation data, and GBT
+    achieves the best overall performance in both settings. Real-robot quality is much easier to predict than simulation
+    quality, suggesting that efficiency-based quality signals are more strongly reflected in trajectory statistics.
+  </p>
+
+  <h2>6. Insights</h2>
+  <ul>
+    <li><strong>Interpretable trajectory features work.</strong> Even simple motion statistics can identify high-quality demonstrations with strong performance, especially on real robot data.</li>
+    <li><strong>Quality is environment-dependent.</strong> Simulation data is harder because reward-based labels are noisier and less directly tied to motion patterns than efficiency-based labels.</li>
+    <li><strong>GBT is the strongest practical choice.</strong> It balances nonlinear modeling power with good performance on tabular engineered features.</li>
+    <li><strong>Feature importance is meaningful.</strong> Smoothness, action magnitude patterns, and temporal consistency repeatedly appear among the most informative predictors.</li>
+    <li><strong>Practical implication:</strong> Demonstration filtering can be done before expensive policy training, which may improve data efficiency in large-scale robot learning pipelines.</li>
+  </ul>
+
+  <p class="small">
+    References: LeRobot (HuggingFace, 2024); Mandlekar et al., CoRL 2021; Luo et al., Consistency Matters, 2024.
+  </p>
+</body>
+</html>

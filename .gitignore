@@ -1,0 +1,62 @@
+# ── 数据文件（太大，存 Google Drive）──────────────
+data/
+*.parquet
+*.csv
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.pt
+*.pth
+
+# ── 模型权重 ───────────────────────────────────────
+models/
+checkpoints/
+*.ckpt
+
+# ── Jupyter 临时文件 ───────────────────────────────
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
+# ── Python 缓存 ────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ── 环境变量 / 密钥（绝对不能上传）───────────────────
+.env
+.env.*
+*.key
+secrets.py
+config_secret.py
+
+# ── 系统文件 ───────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+
+# ── Claude Code 本地配置 ───────────────────────────
+.claude/
+
+# ── 日志和临时输出 ─────────────────────────────────
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+
+# ── HuggingFace 本地缓存 ───────────────────────────
+~/.cache/huggingface/
+.cache/
+
+# ── 报告草稿（正式版通过 Drive 共享）─────────────────
+report/*.pdf
+report/*.pptx
+report/*.docx
