@@ -1,5 +1,5 @@
 # Teamwork: 
-## Team leader: Dazhi Yang 
+## Team Leader: Dazhi Yang 
 ## Team member: Jinqiang Ding 
 ## Team member: Xiao Wang
 
